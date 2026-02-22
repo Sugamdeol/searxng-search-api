@@ -22,13 +22,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Ultra-fast verified instances (sub-200ms response, high uptime)
+# Single reliable instance
 SEARXNG_INSTANCES = [
-    "https://sx.catgirl.cloud",       # 0.076s, 100% uptime
-    "https://search.pereira.is",      # 0.114s, 85% uptime
-    "https://o5.gg",                  # 0.169s, 100% uptime
-    "https://search.pi.vps.pw",       # 0.188s, 100% uptime
-    "https://searx.ox2.fr",           # 0.195s, 99% uptime
+    "https://searx.ox2.fr",           # 0.195s, 99% uptime, A+ grade
 ]
 
 async def search_instance(instance: str, query: str, category: str = "general", 
