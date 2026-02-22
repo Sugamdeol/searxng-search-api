@@ -1,34 +1,46 @@
 # searxng-search
 
-Self-hosted web search API using SearXNG metasearch engine. Aggregates results from 70+ search engines without API keys or rate limits.
+Web search using public SearXNG instances. Aggregates results from 70+ search engines without API keys.
 
 ## Features
 
-- **No API keys needed** - Uses SearXNG's distributed search
+- **No API keys needed** - Uses public SearXNG instances
 - **70+ search engines** - Google, Bing, DuckDuckGo, Wikipedia, etc.
-- **Privacy-focused** - Self-hosted, no tracking
+- **Privacy-focused** - No tracking, no self-hosting required
 - **Multiple formats** - Web, news, images, videos
-- **FastAPI wrapper** - Clean REST API with automatic docs
-- **Redis caching** - Speed up repeated queries
-- **One-click deploy** - Render/Railway ready
+- **FastAPI wrapper** - Clean REST API with auto-fallback
+- **Instance rotation** - Auto-switches if one instance is down
 
 ## Quick Start
 
-### Local Development
+### Option 1: Use Directly (No Deploy)
 
-```bash
-# Start SearXNG + API
-docker compose up -d
+```python
+import requests
 
-# Test search
-curl "http://localhost:8080/search?q=python+tutorial"
+# Call public SearXNG instance directly
+response = requests.get(
+    "https://search.sapti.me/search",
+    params={"q": "python tutorial", "format": "json"}
+)
+data = response.json()
 ```
 
-### Deploy to Render
+### Option 2: Deploy Your Own Wrapper
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/yourusername/searxng-search)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Sugamdeol/searxng-search-api)
 
-## API Endpoints
+## Public SearXNG Instances
+
+| Instance | URL | Location |
+|----------|-----|----------|
+| search.sapti.me | https://search.sapti.me | EU |
+| searx.be | https://searx.be | EU |
+| search.bus-hit.me | https://search.bus-hit.me | EU |
+| searx.drgns.space | https://searx.drgns.space | US |
+| searx.oakleycord.dev | https://searx.oakleycord.dev | US |
+
+## API Endpoints (If Self-Hosted)
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
@@ -38,86 +50,79 @@ curl "http://localhost:8080/search?q=python+tutorial"
 | `/videos` | GET | Video search |
 | `/health` | GET | Service health check |
 
-## Query Parameters
+## Direct SearXNG API Format
 
-- `q` - Search query (required)
-- `limit` - Number of results (default: 10, max: 100)
-- `safesearch` - 0 (off), 1 (moderate), 2 (strict)
-- `language` - Language code (en, de, fr, etc.)
+```bash
+# Basic search
+curl "https://search.sapti.me/search?q=python+tutorial&format=json"
+
+# News only
+curl "https://search.sapti.me/search?q=tech+news&categories=news&format=json"
+
+# Images
+curl "https://search.sapti.me/search?q=cats&categories=images&format=json"
+```
 
 ## Response Format
 
 ```json
 {
   "query": "python tutorial",
+  "number_of_results": 1500000,
   "results": [
     {
       "title": "Python Tutorial - W3Schools",
       "url": "https://www.w3schools.com/python/",
       "content": "Learn Python with W3Schools...",
-      "engine": "google",
-      "score": 0.95
+      "engine": "google"
     }
-  ],
-  "total": 1500000,
-  "time": 0.45
+  ]
 }
 ```
 
-## Architecture
+## Python Usage
 
+```python
+import requests
+
+def search_web(query, instance="https://search.sapti.me"):
+    """Search using public SearXNG instance"""
+    response = requests.get(
+        f"{instance}/search",
+        params={"q": query, "format": "json"},
+        timeout=30
+    )
+    return response.json()
+
+# Search
+results = search_web("machine learning tutorial")
+for r in results["results"][:5]:
+    print(f"{r['title']}: {r['url']}")
 ```
-User → FastAPI → SearXNG → 70+ Search Engines
-         ↓
-      Redis Cache
-```
+
+## Query Parameters
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `q` | Search query | required |
+| `format` | Output format (json, html) | html |
+| `categories` | Filter by category (general, news, images, videos) | general |
+| `language` | Language code (en, de, fr, etc.) | en |
+| `safesearch` | Safe search (0=off, 1=moderate, 2=strict) | 1 |
+| `pageno` | Page number | 1 |
 
 ## Files
 
-- `docker-compose.yml` - SearXNG + Valkey + API stack
-- `api/main.py` - FastAPI wrapper
-- `searxng/settings.yml` - SearXNG configuration
+- `api/main.py` - FastAPI wrapper with fallback instances
 - `render.yaml` - Render deployment spec
+- `requirements.txt` - Python dependencies
 
 ## Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SEARXNG_HOST` | `http://searxng:8080` | SearXNG internal URL |
-| `REDIS_URL` | `redis://redis:6379` | Redis cache URL |
-| `CACHE_TTL` | `3600` | Cache time in seconds |
-| `MAX_RESULTS` | `100` | Max results per query |
-
-## Usage Examples
-
-### Basic Search
-```python
-import requests
-
-response = requests.get("http://localhost:8080/search?q=machine+learning")
-data = response.json()
-for result in data["results"]:
-    print(f"{result['title']}: {result['url']}")
-```
-
-### With Options
-```bash
-curl "http://localhost:8080/search?q=news&limit=20&language=en&safesearch=1"
-```
-
-## Maintenance
-
-Update SearXNG:
-```bash
-docker compose pull
-docker compose up -d
-```
-
-View logs:
-```bash
-docker compose logs -f searxng
-docker compose logs -f api
-```
+| `SEARXNG_INSTANCES` | Comma-separated list | Fallback instances |
+| `DEFAULT_INSTANCE` | `https://search.sapti.me` | Primary instance |
 
 ## License
 

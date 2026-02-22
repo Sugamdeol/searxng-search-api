@@ -1,14 +1,10 @@
 services:
   - type: web
     name: searxng-search-api
-    runtime: docker
+    runtime: python
     plan: free
-    dockerfilePath: ./Dockerfile
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
     envVars:
-      - key: SEARXNG_SECRET
-        generateValue: true
-      - key: CACHE_TTL
-        value: 3600
-      - key: MAX_RESULTS
-        value: 100
-    healthCheckPath: /health
+      - key: PYTHON_VERSION
+        value: 3.11.0
