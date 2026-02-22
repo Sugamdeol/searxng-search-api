@@ -7,8 +7,8 @@ if [ -z "$SEARXNG_SECRET" ] || [ "$SEARXNG_SECRET" = "ultrasecretkey" ]; then
     echo "Generated SearXNG secret"
 fi
 
-# Update settings.yml with secret
-sed -i "s/ultrasecretkey/$SEARXNG_SECRET/g" /etc/searxng/settings.yml
+# Update settings.yml with secret (use | as delimiter to avoid issues with / in secret)
+sed -i "s|ultrasecretkey|$SEARXNG_SECRET|g" /etc/searxng/settings.yml
 
 # Start SearXNG in background
 echo "Starting SearXNG..."
