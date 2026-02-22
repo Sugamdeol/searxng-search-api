@@ -1,9 +1,7 @@
-# Unified SearXNG + FastAPI container for Render free tier
 FROM python:3.11-slim
 
-# Install SearXNG dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget \
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
     git \
     build-essential \
     libxml2-dev \
@@ -13,33 +11,49 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install SearXNG
+# Set working directory for SearXNG
 WORKDIR /searxng
-RUN git clone --depth 1 https://github.com/searxng/searxng.git . \
-    && pip install --no-cache-dir -e .
+
+# Clone SearXNG
+RUN git clone --depth 1 https://github.com/searxng/searxng.git .
+
+# Install SearXNG dependencies first (including msgspec)
+RUN pip install --no-cache-dir \
+    msgspec \
+    babel \
+    flask \
+    jinja2 \
+    lxml \
+    pyyaml \
+    requests \
+    httpx \
+    uvloop \
+    brotli \
+    aiohttp \
+    certifi
+
+# Now install SearXNG in editable mode
+RUN pip install --no-cache-dir -e .
 
 # Copy SearXNG settings
 COPY searxng/settings.yml /etc/searxng/settings.yml
 
-# Install FastAPI dependencies
+# Set working directory for FastAPI
 WORKDIR /app
+
+# Copy FastAPI requirements and install
 COPY api/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy FastAPI app
-COPY api/main.py .
+# Copy FastAPI code
+COPY api/ .
 
 # Copy startup script
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
+COPY start.sh .
+RUN chmod +x start.sh
 
-# Environment variables
-ENV SEARXNG_SETTINGS_PATH=/etc/searxng/settings.yml
-ENV SEARXNG_SECRET=ultrasecretkey
-ENV PYTHONUNBUFFERED=1
-
-# Expose ports
-EXPOSE 8080 8000
+# Expose port
+EXPOSE 8080
 
 # Start both services
-CMD ["/start.sh"]
+CMD ["./start.sh"]
