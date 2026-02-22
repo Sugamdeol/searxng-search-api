@@ -6,7 +6,10 @@ services:
     dockerfilePath: ./api/Dockerfile
     envVars:
       - key: SEARXNG_URL
-        value: http://searxng:8080
+        fromService:
+          type: web
+          name: searxng-engine
+          property: hostport
       - key: REDIS_URL
         fromService:
           type: redis
@@ -22,8 +25,8 @@ services:
     name: searxng-engine
     runtime: docker
     plan: standard
-    image:
-      url: docker.io/searxng/searxng:latest
+    dockerContext: ./searxng
+    dockerfilePath: ./searxng/Dockerfile
     envVars:
       - key: SEARXNG_BASE_URL
         value: https://searxng-engine.onrender.com/
