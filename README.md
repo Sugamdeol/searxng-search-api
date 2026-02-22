@@ -4,24 +4,34 @@ Self-hosted web search API with 70+ engines. No API keys. No rate limits. Full p
 
 ## Quick Start
 
+### Local (Unified Container)
 ```bash
-# Clone and start
+# Clone and build
 git clone https://github.com/yourusername/searxng-search.git
 cd searxng-search
+docker build -t searxng-search .
 
-# Set secret key
-sed -i "s|ultrasecretkey|$(openssl rand -hex 32)|g" searxng/settings.yml
-
-# Start services
-docker compose up -d
+# Run
+docker run -p 8000:8000 -e SEARXNG_SECRET=$(openssl rand -hex 32) searxng-search
 
 # Test
 curl "http://localhost:8000/search?q=python+tutorial"
 ```
 
-## Deploy to Render
+### Local (Docker Compose - Development)
+```bash
+# Set secret key
+sed -i "s|ultrasecretkey|$(openssl rand -hex 32)|g" searxng/settings.yml
+
+# Start all services
+docker compose up -d
+```
+
+## Deploy to Render (Free Tier)
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Sugamdeol/searxng-search-api)
+
+**Single container** with both SearXNG + FastAPI (optimized for Render's 512MB free tier). No Redis needed - uses in-memory caching.
 
 ## API Endpoints
 

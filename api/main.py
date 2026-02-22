@@ -8,9 +8,9 @@ import json
 import hashlib
 from typing import Optional, List
 from datetime import datetime
+from functools import lru_cache
 
 import httpx
-import redis
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -19,8 +19,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Config
-SEARXNG_URL = os.getenv("SEARXNG_URL", "http://searxng:8080")
-REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
+SEARXNG_URL = os.getenv("SEARXNG_URL", "http://localhost:8080")
+REDIS_URL = os.getenv("REDIS_URL", "")
 CACHE_TTL = int(os.getenv("CACHE_TTL", "3600"))
 MAX_RESULTS = int(os.getenv("MAX_RESULTS", "100"))
 
@@ -31,7 +31,31 @@ app = FastAPI(
     version="1.0.0"
 )
 
-redis_client = redis.from_url(REDIS_URL, decode_responses=True)
+# Redis setup (optional)
+redis_client = None
+if REDIS_URL:
+    try:
+        import redis as redis_lib
+        redis_client = redis_lib.from_url(REDIS_URL, decode_responses=True)
+        redis_client.ping()
+    except:
+        redis_client = None
+
+# In-memory cache fallback
+_memory_cache = {}
+
+def cache_get(key: str) -> Optional[str]:
+    """Get from cache (Redis or memory)."""
+    if redis_client:
+        return redis_client.get(key)
+    return _memory_cache.get(key)
+
+def cache_set(key: str, value: str, ttl: int = 3600):
+    """Set cache (Redis or memory)."""
+    if redis_client:
+        redis_client.setex(key, ttl, value)
+    else:
+        _memory_cache[key] = value
 
 # Models
 class SearchResult(BaseModel):
@@ -118,7 +142,7 @@ async def search(
     
     # Check cache
     cache_key = get_cache_key(q, "general", limit=limit, safesearch=safesearch, lang=language)
-    cached = redis_client.get(cache_key)
+    cached = cache_get(cache_key)
     
     if cached:
         data = json.loads(cached)
@@ -142,7 +166,7 @@ async def search(
     }
     
     # Cache result
-    redis_client.setex(cache_key, CACHE_TTL, json.dumps(response_data))
+    cache_set(cache_key, json.dumps(response_data), CACHE_TTL)
     
     return SearchResponse(**response_data)
 
@@ -156,7 +180,7 @@ async def news(
     """Search news articles."""
     
     cache_key = get_cache_key(q, "news", limit=limit, safesearch=safesearch, lang=language)
-    cached = redis_client.get(cache_key)
+    cached = cache_get(cache_key)
     
     if cached:
         data = json.loads(cached)
@@ -177,7 +201,7 @@ async def news(
         "engines": data.get("engines", [])
     }
     
-    redis_client.setex(cache_key, CACHE_TTL, json.dumps(response_data))
+    cache_set(cache_key, json.dumps(response_data), CACHE_TTL)
     return SearchResponse(**response_data)
 
 @app.get("/images", response_model=SearchResponse)
@@ -189,7 +213,7 @@ async def images(
     """Search images."""
     
     cache_key = get_cache_key(q, "images", limit=limit, safesearch=safesearch)
-    cached = redis_client.get(cache_key)
+    cached = cache_get(cache_key)
     
     if cached:
         data = json.loads(cached)
@@ -210,7 +234,7 @@ async def images(
         "engines": data.get("engines", [])
     }
     
-    redis_client.setex(cache_key, CACHE_TTL, json.dumps(response_data))
+    cache_set(cache_key, json.dumps(response_data), CACHE_TTL)
     return SearchResponse(**response_data)
 
 @app.get("/videos", response_model=SearchResponse)
@@ -222,7 +246,7 @@ async def videos(
     """Search videos."""
     
     cache_key = get_cache_key(q, "videos", limit=limit, safesearch=safesearch)
-    cached = redis_client.get(cache_key)
+    cached = cache_get(cache_key)
     
     if cached:
         data = json.loads(cached)
@@ -243,7 +267,7 @@ async def videos(
         "engines": data.get("engines", [])
     }
     
-    redis_client.setex(cache_key, CACHE_TTL, json.dumps(response_data))
+    cache_set(cache_key, json.dumps(response_data), CACHE_TTL)
     return SearchResponse(**response_data)
 
 @app.get("/health", response_model=HealthResponse)
@@ -251,7 +275,7 @@ async def health():
     """Check service health."""
     
     searxng_status = "unknown"
-    redis_status = "unknown"
+    redis_status = "disabled" if not REDIS_URL else "unknown"
     
     # Check SearXNG
     try:
@@ -262,13 +286,14 @@ async def health():
         searxng_status = "unreachable"
     
     # Check Redis
-    try:
-        redis_client.ping()
-        redis_status = "healthy"
-    except:
-        redis_status = "unreachable"
+    if REDIS_URL and redis_client:
+        try:
+            redis_client.ping()
+            redis_status = "healthy"
+        except:
+            redis_status = "unreachable"
     
-    overall = "healthy" if searxng_status == "healthy" and redis_status == "healthy" else "degraded"
+    overall = "healthy" if searxng_status == "healthy" else "degraded"
     
     return HealthResponse(
         status=overall,
@@ -283,6 +308,7 @@ async def root():
     return {
         "name": "SearXNG Search API",
         "version": "1.0.0",
+        "cache": "redis" if redis_client else "memory",
         "endpoints": [
             "/search - Web search",
             "/news - News search", 
