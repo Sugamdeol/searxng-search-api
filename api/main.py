@@ -46,7 +46,7 @@ async def search_instance(instance: str, query: str, category: str = "general",
                 "safesearch": safesearch,
             }
             if category != "general":
-                params["categories"] = category
+                params["category"] = category
                 
             response = await client.get(f"{instance}/search", params=params)
             
