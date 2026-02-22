@@ -1,0 +1,55 @@
+services:
+  searxng:
+    image: docker.io/searxng/searxng:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./searxng:/etc/searxng:rw
+    environment:
+      - SEARXNG_BASE_URL=https://${SEARXNG_HOSTNAME:-localhost}/
+      - SEARXNG_SECRET=${SEARXNG_SECRET:-ultrasecretkey}
+    networks:
+      - searxng
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: docker.io/valkey/valkey:8-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    networks:
+      - searxng
+    command: valkey-server --save 30 1 --loglevel warning
+
+  api:
+    build: ./api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - SEARXNG_URL=http://searxng:8080
+      - REDIS_URL=redis://redis:6379
+      - CACHE_TTL=${CACHE_TTL:-3600}
+      - MAX_RESULTS=${MAX_RESULTS:-100}
+    depends_on:
+      - searxng
+      - redis
+    networks:
+      - searxng
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  redis-data:
+
+networks:
+  searxng:
+    driver: bridge

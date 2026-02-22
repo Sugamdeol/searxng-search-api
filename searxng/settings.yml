@@ -1,0 +1,148 @@
+general:
+  debug: false
+  instance_name: "SearXNG Search API"
+  contact_url: false
+  enable_metrics: false
+
+search:
+  safe_search: 1
+  autocomplete: "duckduckgo"
+  default_lang: "en"
+  formats:
+    - html
+    - json
+  max_page: 10
+
+server:
+  port: 8080
+  bind_address: "0.0.0.0"
+  secret_key: "ultrasecretkey"  # Change this!
+  limiter: false
+  public_instance: false
+
+redis:
+  url: redis://redis:6379/0
+
+ui:
+  static_use_hash: true
+  default_theme: simple
+  default_locale: en
+  theme_args:
+    simple_style: auto
+
+outgoing:
+  request_timeout: 15.0
+  max_request_timeout: 20.0
+  pool_connections: 100
+  pool_maxsize: 100
+  enable_http2: true
+
+# Enabled engines (70+ available)
+engines:
+  - name: google
+    engine: google
+    shortcut: go
+    disabled: false
+
+  - name: bing
+    engine: bing
+    shortcut: bi
+    disabled: false
+
+  - name: duckduckgo
+    engine: duckduckgo
+    shortcut: ddg
+    disabled: false
+
+  - name: wikipedia
+    engine: wikipedia
+    shortcut: wp
+    disabled: false
+
+  - name: wolframalpha
+    engine: wolframalpha
+    shortcut: wa
+    disabled: true  # Requires API key
+
+  - name: github
+    engine: github
+    shortcut: gh
+    disabled: false
+
+  - name: stackoverflow
+    engine: stackoverflow
+    shortcut: so
+    disabled: false
+
+  - name: arxiv
+    engine: arxiv
+    shortcut: ax
+    disabled: false
+
+  - name: news
+    engine: bing_news
+    shortcut: bn
+    categories: news
+    disabled: false
+
+  - name: google news
+    engine: google_news
+    shortcut: gn
+    categories: news
+    disabled: false
+
+  - name: google images
+    engine: google_images
+    shortcut: gi
+    categories: images
+    disabled: false
+
+  - name: bing images
+    engine: bing_images
+    shortcut: bi
+    categories: images
+    disabled: false
+
+  - name: duckduckgo images
+    engine: duckduckgo_images
+    shortcut: ddi
+    categories: images
+    disabled: false
+
+  - name: youtube
+    engine: youtube
+    shortcut: yt
+    categories: videos
+    disabled: false
+
+  - name: dailymotion
+    engine: dailymotion
+    shortcut: dm
+    categories: videos
+    disabled: false
+
+# Plugins
+plugins:
+  - plugin: "Open Redirect Protection"
+    name: "open_redirect"
+    enabled: true
+
+  - plugin: "Hostname Replace"
+    name: "hostname_replace"
+    enabled: false
+
+  - plugin: "HTTPS Rewrite"
+    name: "https_rewrite"
+    enabled: false
+
+  - plugin: "Self Informations"
+    name: "self_info"
+    enabled: true
+
+  - plugin: "Tracker URL Remover"
+    name: "tracker_url_remover"
+    enabled: true
+
+  - plugin: "Ahmia Blacklist"
+    name: "ahmia_blacklist"
+    enabled: false

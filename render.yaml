@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: searxng-search-api
+    runtime: docker
+    plan: standard
+    dockerfilePath: ./api/Dockerfile
+    envVars:
+      - key: SEARXNG_URL
+        value: http://searxng:8080
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: searxng-redis
+          property: connectionString
+      - key: CACHE_TTL
+        value: 3600
+      - key: MAX_RESULTS
+        value: 100
+    healthCheckPath: /health
+
+  - type: web
+    name: searxng-engine
+    runtime: docker
+    plan: standard
+    dockerContext: .
+    dockerfilePath: ./searxng/Dockerfile
+    envVars:
+      - key: SEARXNG_BASE_URL
+        value: https://searxng-engine.onrender.com/
+      - key: SEARXNG_SECRET
+        generateValue: true
+    healthCheckPath: /healthz
+
+  - type: redis
+    name: searxng-redis
+    plan: free
+    ipAllowList: []  # Only internal services
