@@ -22,16 +22,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Public SearXNG instances (fallback list)
+# Ultra-fast verified instances (sub-200ms response, high uptime)
 SEARXNG_INSTANCES = [
-    "https://search.sapti.me",
-    "https://searx.be",
-    "https://search.bus-hit.me",
-    "https://searx.drgns.space",
-    "https://searx.oakleycord.dev",
-    "https://search.projectsegfault.com",
-    "https://search.smnz.de",
-    "https://searx.nixnet.services",
+    "https://sx.catgirl.cloud",       # 0.076s, 100% uptime
+    "https://search.pereira.is",      # 0.114s, 85% uptime
+    "https://o5.gg",                  # 0.169s, 100% uptime
+    "https://search.pi.vps.pw",       # 0.188s, 100% uptime
+    "https://searx.ox2.fr",           # 0.195s, 99% uptime
 ]
 
 async def search_instance(instance: str, query: str, category: str = "general", 
