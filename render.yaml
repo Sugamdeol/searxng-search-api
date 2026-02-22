@@ -22,8 +22,8 @@ services:
     name: searxng-engine
     runtime: docker
     plan: standard
-    dockerContext: .
-    dockerfilePath: ./searxng/Dockerfile
+    image:
+      url: docker.io/searxng/searxng:latest
     envVars:
       - key: SEARXNG_BASE_URL
         value: https://searxng-engine.onrender.com/
